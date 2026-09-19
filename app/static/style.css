@@ -714,8 +714,9 @@ a { color: inherit; }
    Liquid-metal button -- used for EVERY button and button-like link.
    Look: black pill with a shimmering liquid-metal rim. The rim is the
    real Paper "liquid metal" WebGL shader, mirrored in by
-   liquid-buttons.js (see frontend/). The animated CSS gradient below is
-   the fallback rim when WebGL is unavailable.
+   liquid-buttons.js (see frontend/), recoloured to the terracotta palette.
+   The animated CSS gradient below is the fallback rim when WebGL is
+   unavailable.
    ------------------------------------------------------------------- */
 .btn-liquid {
   --lm-text: #cfcfcf;
@@ -739,7 +740,7 @@ a { color: inherit; }
   color: var(--lm-text);
   text-decoration: none;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-  background: linear-gradient(120deg, #1c1c1c 0%, #8a8a8a 25%, #0a0a0a 50%, #b5b5b5 75%, #1c1c1c 100%);
+  background: linear-gradient(120deg, #1c1c1c 0%, var(--brass-dark) 25%, #0a0a0a 50%, #ffb59f 75%, #1c1c1c 100%);
   background-size: 300% 300%;
   animation: liquid-shift 6s ease-in-out infinite;
   box-shadow:
@@ -781,11 +782,11 @@ a { color: inherit; }
 .btn-liquid.has-canvas { animation: none; background: #0a0a0a; }
 
 .btn-liquid:hover {
-  --lm-text: #ffffff;
+  --lm-text: #fff6ee;
   transform: translateY(-1px);
   box-shadow:
     0 0 0 1px rgba(0, 0, 0, 0.4),
-    0 12px 6px 0 rgba(0, 0, 0, 0.05),
+    0 10px 22px -8px rgba(242, 106, 75, 0.55),
     0 8px 5px 0 rgba(0, 0, 0, 0.1),
     0 4px 4px 0 rgba(0, 0, 0, 0.15),
     0 1px 2px 0 rgba(0, 0, 0, 0.2);

@@ -4,6 +4,9 @@
 // uses the very same @paper-design/shaders liquid-metal fragment shader and
 // uniforms, plus the same hover / press / ripple behaviour.
 //
+// The shader's silver output is recoloured through the site's palette
+// (ink -> rust -> terracotta -> linen) so the shimmer matches the theme.
+//
 // One WebGL context per button would blow through the browser limit (~16)
 // as soon as the catalog grows, so a SINGLE shader is rendered into an
 // off-screen canvas and every visible button mirrors a slice of it into its
@@ -19,10 +22,38 @@ const SPEED_IDLE = 0.6;
 const SPEED_HOVER = 1;
 const SPEED_CLICK = 2.4;
 
+// Gradient map: brightness of the shader pixel -> site colour.
+// stops: [position, r, g, b]  (ink, rust, terracotta, light terracotta, linen)
+const PALETTE = [
+  [0.0, 14, 11, 10],
+  [0.3, 88, 30, 22],
+  [0.52, 209, 87, 58], // --brass-dark
+  [0.72, 242, 106, 75], // --brass
+  [0.88, 255, 196, 172],
+  [1.0, 248, 245, 239], // --oat-light
+];
+const LUT = (() => {
+  const lut = new Uint8ClampedArray(256 * 3);
+  for (let i = 0; i < 256; i++) {
+    const t = i / 255;
+    let k = 0;
+    while (k < PALETTE.length - 2 && t > PALETTE[k + 1][0]) k++;
+    const [t0, r0, g0, b0] = PALETTE[k];
+    const [t1, r1, g1, b1] = PALETTE[k + 1];
+    const f = (t - t0) / (t1 - t0);
+    lut[i * 3] = r0 + (r1 - r0) * f;
+    lut[i * 3 + 1] = g0 + (g1 - g0) * f;
+    lut[i * 3 + 2] = b0 + (b1 - b0) * f;
+  }
+  return lut;
+})();
+
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 let mount = null;
-let source = null; // the shader's <canvas>
+let shader = null; // the shader's own <canvas> (raw silver output)
+let source = null; // the recoloured copy that buttons mirror
+let toneCtx = null;
 let failed = false;
 let raf = null;
 let hovering = 0;
@@ -60,9 +91,11 @@ function ensureShader() {
       { preserveDrawingBuffer: true },
       reducedMotion.matches ? 0 : SPEED_IDLE,
       0,
-      4, // render at >=4x so the rim stays crisp when stretched over wide buttons
+      3, // render at >=3x so the rim stays crisp when stretched over wide buttons
     );
-    source = host.querySelector("canvas");
+    shader = host.querySelector("canvas");
+    source = document.createElement("canvas");
+    toneCtx = source.getContext("2d", { willReadFrequently: true });
     return true;
   } catch (err) {
     failed = true;
@@ -74,6 +107,31 @@ function ensureShader() {
 
 function setSpeed(speed) {
   if (mount && !reducedMotion.matches) mount.setSpeed(speed);
+}
+
+/** Copies the shader frame into `source`, mapped through the site palette. */
+function recolour() {
+  if (!shader || !shader.width) return false;
+  if (source.width !== shader.width || source.height !== shader.height) {
+    source.width = shader.width;
+    source.height = shader.height;
+  }
+  toneCtx.drawImage(shader, 0, 0);
+  const img = toneCtx.getImageData(0, 0, source.width, source.height);
+  const d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i], g = d[i + 1], b = d[i + 2];
+    // luminance, nudged by the shader's warm/cool colour fringes so the
+    // rim keeps a bit of iridescence, just inside the terracotta palette
+    let v = 0.299 * r + 0.587 * g + 0.114 * b + 0.35 * (r - b);
+    v = v < 0 ? 0 : v > 255 ? 255 : v | 0;
+    d[i] = LUT[v * 3];
+    d[i + 1] = LUT[v * 3 + 1];
+    d[i + 2] = LUT[v * 3 + 2];
+    d[i + 3] = 255;
+  }
+  toneCtx.putImageData(img, 0, 0);
+  return true;
 }
 
 function drawButton(btn, info) {
@@ -98,6 +156,10 @@ function drawButton(btn, info) {
 
 function frame() {
   raf = null;
+  if (!recolour()) {
+    if (visible.size) raf = requestAnimationFrame(frame);
+    return;
+  }
   visible.forEach((btn) => drawButton(btn, tracked.get(btn)));
   if (visible.size && !reducedMotion.matches) raf = requestAnimationFrame(frame);
 }
