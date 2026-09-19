@@ -27,13 +27,13 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> models.
     if not login:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Необхідна аутентифікація",
+            detail="Authentication required",
         )
     user = crud.get_user_by_login(db, login)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Необхідна аутентифікація",
+            detail="Authentication required",
         )
     return user
 

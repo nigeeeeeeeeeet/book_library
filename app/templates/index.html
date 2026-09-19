@@ -1,44 +1,81 @@
 {% extends "base.html" %}
+{% from "_macros.html" import liquid_button %}
 {% block content %}
-<h1>Каталог книг</h1>
+{% set author_count = books | map(attribute="author.name") | unique | list | length %}
+{% set page_count = books | sum(attribute="pages") %}
+
+<section class="hero">
+    <p class="eyebrow">Personal catalogue</p>
+    <h1>Every book,<br><em>in its place.</em></h1>
+    <p class="lede">A quiet corner for the books you own, the authors behind them, and every page in between.</p>
+    <dl class="stats">
+        <div class="stat"><dt>Books</dt><dd data-count="{{ books | length }}">{{ books | length }}</dd></div>
+        <div class="stat"><dt>Authors</dt><dd data-count="{{ author_count }}">{{ author_count }}</dd></div>
+        <div class="stat"><dt>Pages</dt><dd data-count="{{ page_count }}">{{ page_count }}</dd></div>
+    </dl>
+</section>
 
 {% if not books %}
-    <p class="empty">Книг поки немає.{% if user %} Натисніть «Додати книгу».{% endif %}</p>
+    <div class="empty">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="M9 7h6M9 11h4"/></svg>
+        <h2>The shelves are empty</h2>
+        <p>No books yet.{% if user %} Add the first one to start your catalogue.{% else %} Sign in to start your catalogue.{% endif %}</p>
+        {% if user %}
+            {{ liquid_button("+ Add book", href="/web/books/add") }}
+        {% else %}
+            {{ liquid_button("Sign in", href="/login") }}
+        {% endif %}
+    </div>
+{% else %}
+    <div class="toolbar">
+        <label class="search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input id="search" type="search" placeholder="Search by title or author" autocomplete="off" aria-label="Search books">
+            <kbd>/</kbd>
+        </label>
+        <span class="result-count" id="result-count" aria-live="polite"></span>
+    </div>
 {% endif %}
 
-<div class="grid">
+<div class="grid" id="grid">
     {% for book in books %}
-    <article class="card">
+    <article class="card" style="--i: {{ loop.index0 }}" data-title="{{ book.title | lower }}" data-author="{{ book.author.name | lower }}">
         <canvas class="card-gradient" aria-hidden="true"></canvas>
-        {% if book.image %}
-            <img class="cover" src="/static/{{ book.image }}" alt="{{ book.title }}">
-        {% else %}
-            <div class="cover placeholder">{{ book.title[0]|upper }}</div>
-        {% endif %}
+        <div class="cover-wrap">
+            <div class="sheen" aria-hidden="true"></div>
+            {% if book.image %}
+                <img class="cover" src="/static/{{ book.image }}" alt="{{ book.title }}" loading="lazy">
+            {% else %}
+                <div class="cover placeholder">{{ book.title[0] | upper }}<small>Book</small></div>
+            {% endif %}
+        </div>
         <div class="card-body">
             <h3 class="title">{{ book.title }}</h3>
             <div class="author">
                 {% if book.author.image %}
                     <img class="avatar" src="/static/{{ book.author.image }}" alt="{{ book.author.name }}">
                 {% else %}
-                    <div class="avatar placeholder">{{ book.author.name[0]|upper }}</div>
+                    <div class="avatar placeholder">{{ book.author.name[0] | upper }}</div>
                 {% endif %}
                 <span>{{ book.author.name }}</span>
             </div>
-            <p class="pages">{{ book.pages }} стор.</p>
+            <p class="pages">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                {{ book.pages }} pages
+            </p>
 
             {% if user %}
             <div class="actions">
                 <form method="post" action="/web/books/update" class="inline-form">
                     <input type="hidden" name="title" value="{{ book.title }}">
                     <input type="hidden" name="author" value="{{ book.author.name }}">
-                    <input type="number" name="new_pages" min="11" value="{{ book.pages }}" required>
-                    <button type="submit" class="btn-small">Оновити</button>
+                    <input type="number" name="new_pages" min="11" value="{{ book.pages }}" required aria-label="Number of pages">
+                    {{ liquid_button("Update", classes="sm") }}
                 </form>
-                <form method="post" action="/web/books/delete" class="inline-form">
+                <form method="post" action="/web/books/delete" class="inline-form solo">
                     <input type="hidden" name="title" value="{{ book.title }}">
                     <input type="hidden" name="author" value="{{ book.author.name }}">
-                    <button type="submit" class="btn-small danger">Видалити</button>
+                    {{ liquid_button("Delete", classes="sm danger") }}
                 </form>
             </div>
             {% endif %}
@@ -46,4 +83,11 @@
     </article>
     {% endfor %}
 </div>
+
+{% if books %}
+<div class="empty no-match" id="no-match">
+    <h2>No matches</h2>
+    <p>Nothing in the catalogue fits that search. Try a different title or author.</p>
+</div>
+{% endif %}
 {% endblock %}

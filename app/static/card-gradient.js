@@ -8,8 +8,9 @@
 // keeps working no matter how many books are in the catalog -- new cards
 // just get picked up by the querySelectorAll below. To stay cheap with a
 // large catalog, each canvas's WebGL context is created lazily (only the
-// first time it scrolls into view) and the render loop pauses whenever
-// the card scrolls off-screen.
+// first time it scrolls into view), the render loop pauses whenever the
+// card scrolls off-screen, and the context is released once the card is far
+// away -- browsers only allow ~16 live WebGL contexts per page.
 (function () {
   const VERTEX_SHADER = `#version 300 es
 in vec4 a_position;
@@ -276,34 +277,78 @@ void main() {
           raf = null;
         }
       },
+      destroy() {
+        this.pause();
+        ro.disconnect();
+        const lose = gl.getExtension("WEBGL_lose_context");
+        if (lose) lose.loseContext();
+      },
     };
   }
+
+  // At most this many cards hold a live WebGL context at once (the button
+  // shader needs one more); the ones farthest from the viewport centre are
+  // released first and simply fall back to the card's flat dark background.
+  const MAX_LIVE = 10;
 
   function setup() {
     const canvases = document.querySelectorAll("canvas.card-gradient");
     if (canvases.length === 0) return;
 
-    const controllers = new WeakMap();
+    const live = new Map(); // canvas -> controller
+    let io;
 
-    const io = new IntersectionObserver(
+    // A canvas that lost its context can't get a new one, so swap in a fresh node.
+    function release(canvas) {
+      const controller = live.get(canvas);
+      if (!controller) return;
+      controller.destroy();
+      live.delete(canvas);
+      const fresh = canvas.cloneNode(false);
+      canvas.replaceWith(fresh);
+      io.unobserve(canvas);
+      io.observe(fresh);
+    }
+
+    function distanceFromCentre(canvas) {
+      const r = canvas.getBoundingClientRect();
+      return Math.abs(r.top + r.height / 2 - window.innerHeight / 2);
+    }
+
+    function evictFarthest(except) {
+      let worst = null;
+      let worstD = -1;
+      live.forEach((_, c) => {
+        if (c === except) return;
+        const d = distanceFromCentre(c);
+        if (d > worstD) {
+          worstD = d;
+          worst = c;
+        }
+      });
+      if (worst) release(worst);
+    }
+
+    io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           const canvas = entry.target;
-          let controller = controllers.get(canvas);
+          let controller = live.get(canvas);
           if (entry.isIntersecting) {
             if (!controller) {
+              if (live.size >= MAX_LIVE) evictFarthest(canvas);
               controller = initCard(canvas);
-              if (controller) controllers.set(canvas, controller);
+              if (controller) live.set(canvas, controller);
             }
             if (controller) controller.play();
           } else if (controller) {
+            // off-screen: stop drawing; the context is only freed when evicted
             controller.pause();
           }
         });
       },
-      { rootMargin: "200px" }
+      { rootMargin: "200px", threshold: [0, 0.01] }
     );
-
     canvases.forEach((canvas) => io.observe(canvas));
   }
 

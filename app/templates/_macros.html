@@ -1,0 +1,8 @@
+{#- One place that renders every button, so they all get the liquid-metal look. -#}
+{% macro liquid_button(label, href=None, type="submit", classes="") -%}
+{%- if href -%}
+<a class="btn-liquid {{ classes }}" href="{{ href }}">{{ label }}</a>
+{%- else -%}
+<button type="{{ type }}" class="btn-liquid {{ classes }}">{{ label }}</button>
+{%- endif -%}
+{%- endmacro %}

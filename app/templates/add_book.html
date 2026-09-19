@@ -1,24 +1,28 @@
 {% extends "base.html" %}
+{% from "_macros.html" import liquid_button %}
+{% block title %}Add book &middot; Book Library{% endblock %}
 {% block content %}
 <div class="form-page">
-    <h1>Додати книгу</h1>
+    <p class="eyebrow">New entry</p>
+    <h1>Add a book</h1>
     <form method="post" action="/web/books/add" enctype="multipart/form-data" class="form">
-        <label>Назва книги
+        <label>Book title
             <input type="text" name="title" required>
         </label>
-        <label>Автор
+        <label>Author
             <input type="text" name="author" required minlength="3" maxlength="30">
         </label>
-        <label>Кількість сторінок
+        <label>Number of pages
             <input type="number" name="pages" min="11" required>
         </label>
-        <label>Обкладинка книги
-            <input type="file" name="book_image" accept="image/*">
+        <label>Book cover
+            <input type="file" name="book_image" accept="image/*" data-preview="cover-preview">
+            <img id="cover-preview" class="preview" alt="Cover preview">
         </label>
-        <label>Фото автора <span class="hint-inline">(використовується лише якщо автор новий)</span>
+        <label><span>Author photo <span class="hint-inline">(only used if the author is new)</span></span>
             <input type="file" name="author_image" accept="image/*">
         </label>
-        <button type="submit" class="btn-liquid">Зберегти</button>
+        {{ liquid_button("Save") }}
     </form>
 </div>
 {% endblock %}
