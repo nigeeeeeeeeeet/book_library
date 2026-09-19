@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Каталог книг</h1>
+
+{% if not books %}
+    <p class="empty">Книг поки немає.{% if user %} Натисніть «Додати книгу».{% endif %}</p>
+{% endif %}
+
+<div class="grid">
+    {% for book in books %}
+    <article class="card">
+        <canvas class="card-gradient" aria-hidden="true"></canvas>
+        {% if book.image %}
+            <img class="cover" src="/static/{{ book.image }}" alt="{{ book.title }}">
+        {% else %}
+            <div class="cover placeholder">{{ book.title[0]|upper }}</div>
+        {% endif %}
+        <div class="card-body">
+            <h3 class="title">{{ book.title }}</h3>
+            <div class="author">
+                {% if book.author.image %}
+                    <img class="avatar" src="/static/{{ book.author.image }}" alt="{{ book.author.name }}">
+                {% else %}
+                    <div class="avatar placeholder">{{ book.author.name[0]|upper }}</div>
+                {% endif %}
+                <span>{{ book.author.name }}</span>
+            </div>
+            <p class="pages">{{ book.pages }} стор.</p>
+
+            {% if user %}
+            <div class="actions">
+                <form method="post" action="/web/books/update" class="inline-form">
+                    <input type="hidden" name="title" value="{{ book.title }}">
+                    <input type="hidden" name="author" value="{{ book.author.name }}">
+                    <input type="number" name="new_pages" min="11" value="{{ book.pages }}" required>
+                    <button type="submit" class="btn-small">Оновити</button>
+                </form>
+                <form method="post" action="/web/books/delete" class="inline-form">
+                    <input type="hidden" name="title" value="{{ book.title }}">
+                    <input type="hidden" name="author" value="{{ book.author.name }}">
+                    <button type="submit" class="btn-small danger">Видалити</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </article>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Бібліотека книг{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css?v=7">
+</head>
+<body>
+    <header class="navbar">
+        <a class="brand" href="/">📚 Бібліотека книг</a>
+        <nav>
+            {% if user %}
+                <span class="nav-user">Вітаємо, {{ user.login }}</span>
+                <a class="btn-liquid nav-cta" href="/web/books/add">+ Додати книгу</a>
+                <a class="btn-small" href="/logout">Вийти</a>
+            {% else %}
+                <a class="btn-small" href="/login">Увійти</a>
+            {% endif %}
+        </nav>
+    </header>
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+    <script src="/static/glow.js?v=7" defer></script>
+    <script src="/static/liquid-button.js?v=7" defer></script>
+    <script src="/static/card-gradient.js?v=7" defer></script>
+</body>
+</html>

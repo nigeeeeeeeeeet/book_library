@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="form-page">
+    <h1>Додати книгу</h1>
+    <form method="post" action="/web/books/add" enctype="multipart/form-data" class="form">
+        <label>Назва книги
+            <input type="text" name="title" required>
+        </label>
+        <label>Автор
+            <input type="text" name="author" required minlength="3" maxlength="30">
+        </label>
+        <label>Кількість сторінок
+            <input type="number" name="pages" min="11" required>
+        </label>
+        <label>Обкладинка книги
+            <input type="file" name="book_image" accept="image/*">
+        </label>
+        <label>Фото автора <span class="hint-inline">(використовується лише якщо автор новий)</span>
+            <input type="file" name="author_image" accept="image/*">
+        </label>
+        <button type="submit" class="btn-liquid">Зберегти</button>
+    </form>
+</div>
+{% endblock %}
